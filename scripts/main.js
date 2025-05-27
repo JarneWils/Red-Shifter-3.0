@@ -2,8 +2,18 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { World } from './world';
-import { createUI } from './ui';
+// import { createUI } from './ui';
 import { Player } from './player';
+import { io } from 'socket.io-client';
+
+/**
+ * server
+ */
+const socket = io('http://localhost:3000');
+
+socket.on('connect', () => {
+  console.log('Verbonden met server:', socket.id);
+});
 
 const skyColor = 'rgb(15, 25, 30)';
 const fogColor = 'rgb(15, 25, 30)';
@@ -46,6 +56,7 @@ controls.target.set(50, 0, 50);
 controls.rotateSpeed = 0.6;
 controls.update();
 
+// players
 const player = new Player(playerCamera, renderer, world.size.width, scene, world);
 scene.add(player.controls.object);
 
@@ -113,8 +124,12 @@ function animate() {
 }
 
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  playerCamera.aspect = window.innerWidth / window.innerHeight;
+  playerCamera.updateProjectionMatrix();
+
+  orbitCamera.aspect = window.innerWidth / window.innerHeight;
+  orbitCamera.updateProjectionMatrix();
+
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 

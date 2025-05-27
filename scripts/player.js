@@ -198,7 +198,6 @@ export class Player {
       this.playerMesh.rotation.set(0, euler.y, 0);
     }
   }
-
   getControls() {
     return this.controls;
   }

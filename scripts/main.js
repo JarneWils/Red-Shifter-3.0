@@ -3,12 +3,10 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { World } from './world';
 import { createUI } from './ui';
+import { Player } from './player';
 
-/**
- * Parameters
- */
-const skyColor = 'rgb(10, 25, 35)';
-const fogColor = 'rgb(10, 25, 35)';
+const skyColor = 'rgb(15, 25, 30)';
+const fogColor = 'rgb(15, 25, 30)';
 
 const stats = new Stats();
 document.body.append(stats.dom);
@@ -24,7 +22,7 @@ document.body.appendChild(renderer.domElement);
 
 // camera
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
-camera.position.set(0, 50, 0);
+camera.position.set(20, 10, 20);
 
 // scene
 const scene = new THREE.Scene();
@@ -32,9 +30,10 @@ const world = new World();
 world.generate();
 scene.add(world);
 
-let isFog = true;
+// Fog
+let isFog = false;
 if (isFog === true) {
-  scene.fog = new THREE.Fog(fogColor, 10, 100);
+  scene.fog = new THREE.Fog(fogColor, 5, 50);
 }
 
 // controls
@@ -43,9 +42,28 @@ controls.target.set(50, 0, 50);
 controls.rotateSpeed = 0.6;
 controls.update();
 
+// player
+const player = new Player(camera, renderer);
+scene.add(player.controls.object);
+
+let usingFirstPerson = false;
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'KeyP') {
+    usingFirstPerson = !usingFirstPerson;
+    if (usingFirstPerson) {
+      player.enable();
+      controls.enabled = false;
+    } else {
+      player.disable();
+      controls.enabled = true;
+    }
+  }
+});
+
 // lights
 function setupLights() {
-  const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 1);
   scene.add(ambient);
 
   const sun = new THREE.DirectionalLight(0xffffff, 3);
@@ -65,10 +83,14 @@ function setupLights() {
   scene.add(shadowHelper);
 }
 
-//loop
+//Loop
+let clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
+  const delta = clock.getDelta();
+
   stats.update();
+  player.update(delta);
   renderer.render(scene, camera);
 }
 

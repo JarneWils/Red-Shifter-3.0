@@ -21,8 +21,12 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 // camera
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
-camera.position.set(20, 10, 20);
+const playerCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
+playerCamera.position.set(20, 10, 20);
+
+// Orbit camera
+const orbitCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight);
+orbitCamera.position.set(20, 10, 20);
 
 // scene
 const scene = new THREE.Scene();
@@ -31,19 +35,18 @@ world.generate();
 scene.add(world);
 
 // Fog
-let isFog = false;
+let isFog = true;
 if (isFog === true) {
-  scene.fog = new THREE.Fog(fogColor, 5, 50);
+  scene.fog = new THREE.Fog(fogColor, 5, 40);
 }
 
 // controls
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(orbitCamera, renderer.domElement);
 controls.target.set(50, 0, 50);
 controls.rotateSpeed = 0.6;
 controls.update();
 
-// player
-const player = new Player(camera, renderer);
+const player = new Player(playerCamera, renderer, world.size.width, scene);
 scene.add(player.controls.object);
 
 let usingFirstPerson = false;
@@ -51,19 +54,22 @@ let usingFirstPerson = false;
 document.addEventListener('keydown', e => {
   if (e.code === 'KeyP') {
     usingFirstPerson = !usingFirstPerson;
+
     if (usingFirstPerson) {
       player.enable();
       controls.enabled = false;
+      currentCamera = playerCamera;
     } else {
       player.disable();
       controls.enabled = true;
+      currentCamera = orbitCamera;
     }
   }
 });
 
 // lights
 function setupLights() {
-  const ambient = new THREE.AmbientLight(0xffffff, 1);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambient);
 
   const sun = new THREE.DirectionalLight(0xffffff, 3);
@@ -85,13 +91,25 @@ function setupLights() {
 
 //Loop
 let clock = new THREE.Clock();
+let currentCamera = orbitCamera; // begin met orbit
+const cameraHelper = new THREE.CameraHelper(playerCamera);
+scene.add(cameraHelper);
+
 function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
 
   stats.update();
-  player.update(delta);
-  renderer.render(scene, camera);
+
+  if (usingFirstPerson) {
+    player.update(delta);
+  } else {
+    controls.update(); // alleen nodig bij orbit controls
+  }
+
+  cameraHelper.update(); // cameraHelper volgt altijd playerCamera
+
+  renderer.render(scene, currentCamera);
 }
 
 window.addEventListener('resize', () => {

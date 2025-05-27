@@ -32,7 +32,7 @@ export class Player {
   }
 
   createPlayerMesh() {
-    const geometry = new THREE.BoxGeometry(1, 2, 1); // 1 breed, 2 hoog, 1 diep
+    const geometry = new THREE.BoxGeometry(1, 1.8, 1); // 1 breed, 2 hoog, 1 diep
     const material = new THREE.MeshBasicMaterial({
       color: 0x00ff00,
       wireframe: true, // kan je weghalen als je 'm vol wilt
@@ -40,9 +40,6 @@ export class Player {
     const mesh = new THREE.Mesh(geometry, material);
 
     // Positioneer cube zo dat onderkant op vloerY ligt (hier 1.5)
-    const floorY = 1.5;
-    mesh.position.set(0, floorY + 1, 0); // 1 = helft van hoogte
-
     return mesh;
   }
 
@@ -165,12 +162,15 @@ export class Player {
       // Positioneer de cube zo dat z’n onderkant op vloerY ligt
       this.playerMesh.position.set(
         position.x,
-        position.y + 0.5, // camera zit op ~1.5m, cube is 2 hoog, dus +0.5 om midden cube gelijk te zetten met controls
+        position.y - 0.5, // camera zit op ~1.5m, cube is 2 hoog, dus +0.5 om midden cube gelijk te zetten met controls
         position.z
       );
 
       // Alleen Y-rotatie synchroniseren, zodat cube draait met camera horizontaal
-      this.playerMesh.rotation.set(0, this.controls.getObject().rotation.y, 0);
+      const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      euler.setFromQuaternion(this.controls.getObject().quaternion);
+
+      this.playerMesh.rotation.set(0, euler.y, 0);
     }
   }
 

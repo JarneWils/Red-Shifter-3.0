@@ -46,7 +46,7 @@ controls.target.set(50, 0, 50);
 controls.rotateSpeed = 0.6;
 controls.update();
 
-const player = new Player(playerCamera, renderer, world.size.width, scene);
+const player = new Player(playerCamera, renderer, world.size.width, scene, world);
 scene.add(player.controls.object);
 
 let usingFirstPerson = false;
@@ -119,5 +119,5 @@ window.addEventListener('resize', () => {
 });
 
 setupLights();
-createUI(world);
+// createUI(world);
 animate();

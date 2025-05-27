@@ -1,24 +1,30 @@
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+import { ControlPanel } from './controlPanel.js';
+
 import * as THREE from 'three';
 
 export class Player {
-  constructor(camera, renderer, worldSize = 100, scene) {
+  constructor(camera, renderer, worldSize = 100, scene, world) {
     this.camera = camera;
     this.controls = new PointerLockControls(camera, renderer.domElement);
+
+    this.world = world;
 
     this.enabled = false;
     this.velocity = new THREE.Vector3();
     this.direction = new THREE.Vector3();
 
-    this.moveForward = false;
-    this.moveBackward = false;
-    this.moveLeft = false;
-    this.moveRight = false;
+    this.playerHeight = 1.5;
+    this.playerWidth = 0.5;
+    this.wireframe = false;
+
+    this.controlsPanel = new ControlPanel();
+    this.controlsPanel.startListening();
 
     this.jumpSpeed = 12;
     this.canJump = false;
     this.gravity = 40;
-    this.speed = 10;
+    this.speed = 8;
 
     this.worldSize = worldSize;
 
@@ -27,75 +33,16 @@ export class Player {
     if (scene) {
       scene.add(this.playerMesh);
     }
-
-    this.setupEvents();
   }
 
   createPlayerMesh() {
-    const geometry = new THREE.BoxGeometry(1, 1.8, 1); // 1 breed, 2 hoog, 1 diep
+    const geometry = new THREE.BoxGeometry(this.playerWidth, this.playerHeight, this.playerWidth); // 1 breed, 1.8 hoog, 1 diep
     const material = new THREE.MeshBasicMaterial({
       color: 0x00ff00,
-      wireframe: true, // kan je weghalen als je 'm vol wilt
+      wireframe: this.wireframe,
     });
     const mesh = new THREE.Mesh(geometry, material);
-
-    // Positioneer cube zo dat onderkant op vloerY ligt (hier 1.5)
     return mesh;
-  }
-
-  setupEvents() {
-    const onKeyDown = event => {
-      event.preventDefault();
-
-      switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-          this.moveForward = true;
-          break;
-        case 'ArrowLeft':
-        case 'KeyA':
-          this.moveLeft = true;
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          this.moveBackward = true;
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          this.moveRight = true;
-          break;
-        case 'Space':
-          if (this.canJump) {
-            this.velocity.y = this.jumpSpeed;
-            this.canJump = false;
-          }
-          break;
-      }
-    };
-
-    const onKeyUp = event => {
-      switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-          this.moveForward = false;
-          break;
-        case 'ArrowLeft':
-        case 'KeyA':
-          this.moveLeft = false;
-          break;
-        case 'ArrowDown':
-        case 'KeyS':
-          this.moveBackward = false;
-          break;
-        case 'ArrowRight':
-        case 'KeyD':
-          this.moveRight = false;
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
   }
 
   enable() {
@@ -111,64 +58,142 @@ export class Player {
   update(delta) {
     if (!this.enabled) return;
 
-    // Reset horizontale snelheid
     this.velocity.x = 0;
     this.velocity.z = 0;
 
-    // Richting bepalen op basis van toetsen
     this.direction.set(0, 0, 0);
-    if (this.moveForward) this.direction.z += 1;
-    if (this.moveBackward) this.direction.z -= 1;
-    if (this.moveLeft) this.direction.x -= 1;
-    if (this.moveRight) this.direction.x += 1;
-
+    if (this.controlsPanel.moveForward) this.direction.z += 1; // forward = -z
+    if (this.controlsPanel.moveBackward) this.direction.z -= 1;
+    if (this.controlsPanel.moveLeft) this.direction.x -= 1;
+    if (this.controlsPanel.moveRight) this.direction.x += 1;
     this.direction.normalize();
 
-    // Horizontale beweging toepassen
     this.velocity.x = this.direction.x * this.speed;
     this.velocity.z = this.direction.z * this.speed;
 
-    // Zwaartekracht toepassen (verticale snelheid aanpassen)
-    this.velocity.y -= this.gravity * delta;
-
-    // Huidige positie van speler
     const position = this.controls.object.position;
 
-    // --- BEWEGING TOEPASSEN ---
-
-    // Horizontaal bewegen via controls (forward, right)
     this.controls.moveRight(this.velocity.x * delta);
     this.controls.moveForward(this.velocity.z * delta);
 
-    // Verticaal positie bijwerken op basis van verticale snelheid
-    position.y += this.velocity.y * delta;
-
-    // Vloer collision detectie
-    const floorY = 3.5;
-    const epsilon = 0.05;
-    if (position.y <= floorY + epsilon) {
-      this.velocity.y = 0;
-      position.y = floorY;
-      this.canJump = true;
+    // SPRINGEN: als jump ingedrukt én kan springen, geef verticale velocity
+    if (this.controlsPanel.jump && this.canJump) {
+      this.velocity.y = this.jumpSpeed;
+      this.canJump = false;
     }
 
-    // Wereldgrenzen toepassen om buiten kaart te voorkomen
+    // Gravity toepassen
+    this.velocity.y -= this.gravity * delta;
+
+    // Verticale positie updaten
+    position.y += this.velocity.y * delta;
+
+    // --- COLLISIONS ---
+
+    const halfWidth = this.playerWidth / 2;
+    const halfDepth = this.playerWidth / 2;
+
+    let playerMinX = position.x - halfWidth;
+    let playerMaxX = position.x + halfWidth;
+    let playerMinY = position.y - this.playerHeight;
+    let playerMaxY = position.y;
+    let playerMinZ = position.z - halfDepth;
+    let playerMaxZ = position.z + halfDepth;
+
+    const minX = Math.floor(playerMinX);
+    const maxX = Math.floor(playerMaxX);
+    const minY = Math.floor(playerMinY);
+    const maxY = Math.floor(playerMaxY);
+    const minZ = Math.floor(playerMinZ);
+    const maxZ = Math.floor(playerMaxZ);
+
+    let onGround = false;
+
+    for (let x = minX; x <= maxX; x++) {
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          const block = this.world.getBlock(x, y, z);
+          if (!block || block.id === 0) continue;
+
+          const blockMinX = x;
+          const blockMaxX = x + 1;
+          const blockMinY = y;
+          const blockMaxY = y + 1;
+          const blockMinZ = z;
+          const blockMaxZ = z + 1;
+
+          const overlapX = playerMaxX > blockMinX && playerMinX < blockMaxX;
+          const overlapY = playerMaxY > blockMinY && playerMinY < blockMaxY;
+          const overlapZ = playerMaxZ > blockMinZ && playerMinZ < blockMaxZ;
+
+          if (overlapX && overlapY && overlapZ) {
+            const overlapLeft = playerMaxX - blockMinX;
+            const overlapRight = blockMaxX - playerMinX;
+            const overlapDown = playerMaxY - blockMinY;
+            const overlapUp = blockMaxY - playerMinY;
+            const overlapFront = playerMaxZ - blockMinZ;
+            const overlapBack = blockMaxZ - playerMinZ;
+
+            const overlaps = [
+              { axis: 'x', amount: overlapLeft, dir: -1 },
+              { axis: 'x', amount: overlapRight, dir: 1 },
+              { axis: 'y', amount: overlapDown, dir: -1 },
+              { axis: 'y', amount: overlapUp, dir: 1 },
+              { axis: 'z', amount: overlapFront, dir: -1 },
+              { axis: 'z', amount: overlapBack, dir: 1 },
+            ].filter(o => o.amount > 0);
+
+            overlaps.sort((a, b) => a.amount - b.amount);
+
+            const smallest = overlaps[0];
+
+            switch (smallest.axis) {
+              case 'x':
+                position.x += smallest.amount * smallest.dir;
+                this.velocity.x = 0;
+                break;
+              case 'y':
+                position.y += smallest.amount * smallest.dir;
+                this.velocity.y = 0;
+                if (smallest.dir === 1) {
+                  onGround = true;
+                }
+                break;
+              case 'z':
+                position.z += smallest.amount * smallest.dir;
+                this.velocity.z = 0;
+                break;
+            }
+
+            // bbox updaten na correctie
+            playerMinX = position.x - halfWidth;
+            playerMaxX = position.x + halfWidth;
+            playerMinY = position.y - this.playerHeight;
+            playerMaxY = position.y;
+            playerMinZ = position.z - halfDepth;
+            playerMaxZ = position.z + halfDepth;
+          }
+        }
+      }
+    }
+
+    this.canJump = onGround;
+
+    // Binnen wereldlimieten houden
     position.x = Math.max(0.5, Math.min(position.x, this.worldSize - 0.5));
     position.z = Math.max(0.5, Math.min(position.z, this.worldSize - 0.5));
+    // Y-limiet kan je zelf toevoegen indien nodig
 
-    // --- SYNCHRONISEER PLAYER CUBE MET CAMERA ---
-
+    // Player mesh updaten
     if (this.playerMesh) {
-      // Positioneer de cube zo dat z’n onderkant op vloerY ligt
       this.playerMesh.position.set(
         position.x,
-        position.y - 0.5, // camera zit op ~1.5m, cube is 2 hoog, dus +0.5 om midden cube gelijk te zetten met controls
+        position.y - this.playerHeight / 2 + 0.2,
         position.z
       );
 
-      // Alleen Y-rotatie synchroniseren, zodat cube draait met camera horizontaal
       const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-      euler.setFromQuaternion(this.controls.getObject().quaternion);
+      euler.setFromQuaternion(this.controls.object.quaternion);
 
       this.playerMesh.rotation.set(0, euler.y, 0);
     }

@@ -86,7 +86,7 @@ scene.add(world);
 // Fog
 let isFog = true;
 if (isFog === true) {
-  scene.fog = new THREE.Fog(fogColor, 5, 40);
+  scene.fog = new THREE.Fog(fogColor, 10, 40);
 }
 
 // controls
@@ -118,7 +118,7 @@ function setupLights() {
   const ambient = new THREE.AmbientLight(0xffffff, 0.8);
   scene.add(ambient);
 
-  const sun = new THREE.DirectionalLight(0xffffff, 3);
+  const sun = new THREE.DirectionalLight(0xffffff, 3.5);
   sun.position.set(world.size.width, 100, world.size.width);
   sun.castShadow = true;
   sun.shadow.camera.top = 100;

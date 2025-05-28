@@ -210,6 +210,12 @@ export class Player {
       'models/choomah.glb', // vervang dit met het pad naar je GLB-bestand
       gltf => {
         const model = gltf.scene;
+        // gltf.scene.traverse(child => {
+        //   if (child.isMesh) {
+        //     child.castShadow = true;
+        //     child.receiveShadow = true;
+        //   }
+        // });
         model.scale.set(0.5, 0.5, 0.5); // schaal het model indien nodig
         scene.add(model);
         Player.remotePlayers[id] = { mesh: model };

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+const blockTypeNumber = '2';
+
 const textureLoader = new THREE.TextureLoader();
 
 function loadTexture(path) {
@@ -11,11 +13,11 @@ function loadTexture(path) {
 }
 
 const textures = {
-  grassTop: loadTexture('textures/grass-top.jpg'),
-  grassSide: loadTexture('textures/grass-side.jpg'),
-  dirt: loadTexture('textures/dirt.jpg'),
-  healingBlock: loadTexture('textures/healingBlock.jpg'),
-  amoBlock: loadTexture('textures/amoBlock.jpg'),
+  grassTop: loadTexture(`textures/grass-top${blockTypeNumber}.jpg`),
+  grassSide: loadTexture(`textures/grass-side${blockTypeNumber}.jpg`),
+  dirt: loadTexture(`textures/dirt${blockTypeNumber}.jpg`),
+  healingBlock: loadTexture(`textures/healingBlock${blockTypeNumber}.jpg`),
+  amoBlock: loadTexture(`textures/amoBlock${blockTypeNumber}.jpg`),
 };
 
 export const blocks = {

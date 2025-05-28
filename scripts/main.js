@@ -87,7 +87,7 @@ world.generate();
 scene.add(world);
 
 // Fog
-let isFog = false;
+let isFog = true;
 if (isFog === true) {
   scene.fog = new THREE.Fog(fogColor, 10, 40);
 }

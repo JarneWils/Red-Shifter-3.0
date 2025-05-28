@@ -9,7 +9,7 @@ import { io } from 'socket.io-client';
 /**
  * server
  */
-const socket = io('http://localhost:3000');
+const socket = io(import.meta.env.PROD ? undefined : 'http://localhost:3000');
 
 let localPlayerId = null;
 

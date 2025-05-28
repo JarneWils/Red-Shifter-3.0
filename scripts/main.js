@@ -11,8 +11,47 @@ import { io } from 'socket.io-client';
  */
 const socket = io('http://localhost:3000');
 
+let localPlayerId = null;
+
+// players
+let player = null;
+
 socket.on('connect', () => {
-  console.log('Verbonden met server:', socket.id);
+  localPlayerId = socket.id;
+
+  player = new Player(
+    playerCamera,
+    renderer,
+    world.size.width,
+    scene,
+    world,
+    localPlayerId,
+    socket
+  );
+
+  scene.add(player.controls.object);
+
+  animate();
+});
+
+socket.on('currentPlayers', playersData => {
+  for (const id in playersData) {
+    if (id === socket.id) continue;
+    Player.addRemotePlayer(id, scene);
+    Player.updateRemotePlayer(id, playersData[id]);
+  }
+});
+
+socket.on('newPlayer', playerData => {
+  Player.addRemotePlayer(playerData.id, scene);
+});
+
+socket.on('playerMoved', data => {
+  Player.updateRemotePlayer(data.id, data);
+});
+
+socket.on('playerDisconnected', id => {
+  Player.removeRemotePlayer(id, scene);
 });
 
 const skyColor = 'rgb(15, 25, 30)';
@@ -55,10 +94,6 @@ const controls = new OrbitControls(orbitCamera, renderer.domElement);
 controls.target.set(50, 0, 50);
 controls.rotateSpeed = 0.6;
 controls.update();
-
-// players
-const player = new Player(playerCamera, renderer, world.size.width, scene, world);
-scene.add(player.controls.object);
 
 let usingFirstPerson = false;
 

@@ -1,13 +1,27 @@
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// __dirname fix voor ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: '*', // Pas aan als nodig, of specificeer je frontend URL
   },
+});
+
+// Serveer statische bestanden uit 'dist'
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Voor SPA: stuur bij elk ander pad index.html terug
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 const players = {};
@@ -22,17 +36,18 @@ io.on('connection', socket => {
     rotation: { x: 0, y: 0, z: 0 },
   };
 
-  // Stuur huidige spelers naar de nieuwe speler
+  // Stuur huidige spelers naar nieuwe speler
   socket.emit('currentPlayers', players);
 
-  // Informeer anderen over de nieuwe speler
+  // Informeer anderen over nieuwe speler
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
-  // Ontvang bewegingen van speler
+  // Beweeg speler
   socket.on('playerMovement', data => {
     if (players[socket.id]) {
       players[socket.id].position = data.position;
       players[socket.id].rotation = data.rotation;
+
       socket.broadcast.emit('playerMoved', {
         id: socket.id,
         position: data.position,
@@ -49,6 +64,7 @@ io.on('connection', socket => {
   });
 });
 
-server.listen(3000, () => {
-  console.log('🚀 Socket.io-server draait op http://localhost:3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🚀 Server draait op http://localhost:${PORT}`);
 });

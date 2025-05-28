@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "server": "node server.js",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "server": "node server.js",
+    "start": "node server.js"
   },
   "devDependencies": {
     "prettier": "3.5.3",

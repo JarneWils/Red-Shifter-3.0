@@ -17,13 +17,13 @@ export class World extends THREE.Group {
   params = {
     seed: 0,
     terrain: {
-      scale: 30,
+      scale: 25,
       magnitude: 0.4,
-      offset: 0.15,
+      offset: 0.2,
     },
   };
 
-  constructor(size = { width: 100, height: 32 }) {
+  constructor(size = { width: 80, height: 25 }) {
     super();
     this.size = size;
   }

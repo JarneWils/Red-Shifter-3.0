@@ -5,20 +5,21 @@ import { World } from './world';
 // import { createUI } from './ui';
 import { Player } from './player';
 import { io } from 'socket.io-client';
+import { ControlPanel } from './controlPanel';
 
-/**
- * server
- */
+const controlPanel = new ControlPanel();
+controlPanel.startListening();
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------SERVER------------------------------------------
+//-------------------------------------------------------------------------------------------------
+
 const socket = io(import.meta.env.PROD ? undefined : 'http://localhost:3000');
-
 let localPlayerId = null;
-
 // players
 let player = null;
-
 socket.on('connect', () => {
   localPlayerId = socket.id;
-
   player = new Player(
     playerCamera,
     renderer,
@@ -28,9 +29,7 @@ socket.on('connect', () => {
     localPlayerId,
     socket
   );
-
   scene.add(player.controls.object);
-
   animate();
 });
 
@@ -53,6 +52,10 @@ socket.on('playerMoved', data => {
 socket.on('playerDisconnected', id => {
   Player.removeRemotePlayer(id, scene);
 });
+
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------Main Script-------------------------------------
+//-------------------------------------------------------------------------------------------------
 
 const skyColor = 'rgb(15, 25, 30)';
 const fogColor = 'rgb(15, 25, 30)';
@@ -84,7 +87,7 @@ world.generate();
 scene.add(world);
 
 // Fog
-let isFog = true;
+let isFog = false;
 if (isFog === true) {
   scene.fog = new THREE.Fog(fogColor, 10, 40);
 }
@@ -119,14 +122,14 @@ function setupLights() {
   scene.add(ambient);
 
   const sun = new THREE.DirectionalLight(0xffffff, 3.5);
-  sun.position.set(world.size.width, 100, world.size.width);
+  sun.position.set(world.size.width - 20, 60, world.size.width);
   sun.castShadow = true;
-  sun.shadow.camera.top = 100;
-  sun.shadow.camera.bottom = -100;
-  sun.shadow.camera.left = -100;
-  sun.shadow.camera.right = 100;
+  sun.shadow.camera.top = 30;
+  sun.shadow.camera.bottom = -60;
+  sun.shadow.camera.left = -50;
+  sun.shadow.camera.right = 50;
   sun.shadow.camera.near = 0.1;
-  sun.shadow.camera.far = 220;
+  sun.shadow.camera.far = 130;
   sun.shadow.bias = -0.001;
   sun.shadow.mapSize = new THREE.Vector2(512, 512);
   scene.add(sun);
@@ -135,11 +138,28 @@ function setupLights() {
   scene.add(shadowHelper);
 }
 
+// Item selector
+const items = document.querySelectorAll('.item');
+
+function updateUI() {
+  items.forEach((item, index) => {
+    item.classList.remove('active');
+
+    if (
+      (index === 0 && controlPanel.axe) ||
+      (index === 1 && controlPanel.gun) ||
+      (index === 2 && controlPanel.block)
+    ) {
+      item.classList.add('active');
+    }
+  });
+}
+
 //Loop
 let clock = new THREE.Clock();
 let currentCamera = orbitCamera; // begin met orbit
 const cameraHelper = new THREE.CameraHelper(playerCamera);
-scene.add(cameraHelper);
+// scene.add(cameraHelper);
 
 function animate() {
   requestAnimationFrame(animate);
@@ -152,6 +172,8 @@ function animate() {
   } else {
     controls.update(); // alleen nodig bij orbit controls
   }
+
+  updateUI();
 
   cameraHelper.update(); // cameraHelper volgt altijd playerCamera
 

@@ -6,6 +6,7 @@ import { World } from './world';
 import { Player } from './player';
 import { io } from 'socket.io-client';
 import { ControlPanel } from './controlPanel';
+import { GunManager } from './gunManager.js';
 
 const controlPanel = new ControlPanel();
 controlPanel.startListening();
@@ -15,7 +16,11 @@ controlPanel.startListening();
 //-------------------------------------------------------------------------------------------------
 
 const socket = io(import.meta.env.PROD ? undefined : 'http://localhost:3000');
+
 let localPlayerId = null;
+let lastGunActiveState = false;
+let gunManager = null;
+
 // players
 let player = null;
 socket.on('connect', () => {
@@ -29,7 +34,10 @@ socket.on('connect', () => {
     localPlayerId,
     socket
   );
+
   scene.add(player.controls.object);
+  gunManager = new GunManager(playerCamera, scene, controlPanel);
+
   animate();
 });
 
@@ -145,11 +153,7 @@ function updateUI() {
   items.forEach((item, index) => {
     item.classList.remove('active');
 
-    if (
-      (index === 0 && controlPanel.axe) ||
-      (index === 1 && controlPanel.gun) ||
-      (index === 2 && controlPanel.block)
-    ) {
+    if ((index === 0 && controlPanel.gun) || (index === 1 && controlPanel.block)) {
       item.classList.add('active');
     }
   });
@@ -169,14 +173,25 @@ function animate() {
 
   if (usingFirstPerson) {
     player.update(delta);
+
+    const shouldBeActive = controlPanel.gun;
+    if (gunManager && shouldBeActive !== lastGunActiveState) {
+      gunManager.setActive(shouldBeActive);
+      lastGunActiveState = shouldBeActive;
+    }
+
+    if (gunManager) gunManager.update(delta);
   } else {
-    controls.update(); // alleen nodig bij orbit controls
+    if (gunManager && lastGunActiveState) {
+      gunManager.setActive(false);
+      lastGunActiveState = false;
+    }
+
+    controls.update();
   }
 
   updateUI();
-
-  cameraHelper.update(); // cameraHelper volgt altijd playerCamera
-
+  cameraHelper.update();
   renderer.render(scene, currentCamera);
 }
 

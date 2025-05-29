@@ -9,7 +9,6 @@ export class ControlPanel {
     this.weapons = ['gun', 'block'];
     this.selectedWeaponIndex = 0;
 
-    this.axe = true;
     this.gun = false;
     this.block = false;
 
@@ -33,9 +32,8 @@ export class ControlPanel {
   _selectWeapon(index) {
     this.selectedWeaponIndex = index;
 
-    this.axe = index === 0;
-    this.gun = index === 1;
-    this.block = index === 2;
+    this.gun = index === 0;
+    this.block = index === 1;
   }
 
   _onWheel(event) {

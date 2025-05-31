@@ -62,7 +62,7 @@ io.on('connection', socket => {
 
   socket.on('playerHit', ({ hitPlayerId, shooterId }) => {
     console.log(`Player ${hitPlayerId} werd geraakt door ${shooterId}`);
-    io.to(hitPlayerId).emit('playerDead');
+    io.to(hitPlayerId).emit('playerDead', shooterId); // <-- Geef shooterId mee
     socket.broadcast.emit('playerHit', { hitPlayerId, shooterId });
   });
 

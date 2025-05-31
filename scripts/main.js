@@ -79,10 +79,14 @@ socket.on('playerDisconnected', id => {
   Player.removeRemotePlayer(id, scene);
 });
 
-socket.on('playerDead', () => {
-  console.log('je bent dood');
-  alert('Je bent dood!'); // of andere logica
-  // evt. respawn
+socket.on('playerDead', shooterId => {
+  if (shooterId) {
+    console.log(`Je bent geraakt door speler ${shooterId}`);
+    alert(`Je bent geraakt door speler ${shooterId}`);
+  } else {
+    console.log('Je bent dood!');
+    alert('Je bent dood!');
+  }
 });
 
 //-------------------------------------------------------------------------------------------------

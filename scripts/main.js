@@ -24,6 +24,14 @@ let gunManager = null;
 // players
 let player = null;
 socket.on('connect', () => {
+  socket.on('currentPlayers', players => {
+    for (const id in players) {
+      if (id !== localPlayerId) {
+        Player.addRemotePlayer(id, scene);
+      }
+    }
+  });
+
   localPlayerId = socket.id;
   player = new Player(
     playerCamera,
@@ -36,17 +44,20 @@ socket.on('connect', () => {
   );
 
   scene.add(player.controls.object);
-  gunManager = new GunManager(playerCamera, scene, controlPanel);
+  gunManager = new GunManager(playerCamera, scene, controlPanel, socket, localPlayerId, world);
+
+  socket.on('bulletFired', data => {
+    console.log('⛳ bulletFired binnen:', data, 'local:', localPlayerId);
+    if (!gunManager || data.id === localPlayerId) return;
+
+    gunManager.spawnBullet(
+      new THREE.Vector3(data.origin.x, data.origin.y, data.origin.z),
+      new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z),
+      true
+    );
+  });
 
   animate();
-});
-
-socket.on('currentPlayers', playersData => {
-  for (const id in playersData) {
-    if (id === socket.id) continue;
-    Player.addRemotePlayer(id, scene);
-    Player.updateRemotePlayer(id, playersData[id]);
-  }
 });
 
 socket.on('newPlayer', playerData => {
@@ -179,8 +190,6 @@ function animate() {
       gunManager.setActive(shouldBeActive);
       lastGunActiveState = shouldBeActive;
     }
-
-    if (gunManager) gunManager.update(delta);
   } else {
     if (gunManager && lastGunActiveState) {
       gunManager.setActive(false);
@@ -189,6 +198,9 @@ function animate() {
 
     controls.update();
   }
+
+  // 🚀 Altijd gunManager updaten
+  if (gunManager) gunManager.update(delta);
 
   updateUI();
   cameraHelper.update();

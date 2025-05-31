@@ -18,21 +18,21 @@ body {
 }
 
 .aimPoint {
-  width: 2px;
-  height: 20px;
+  width: 1px;
+  height: 15px;
   background-color: rgb(200, 200, 200);
   position: fixed;
-  top: calc(50% - 10px);
-  left: calc(50% - 1px);
+  top: calc(50% - 7.5px);
+  left: 50%;
   z-index: 1000;
 }
 .aimPoint2 {
-  width: 20px;
-  height: 2px;
+  width: 15px;
+  height: 1px;
   background-color: rgb(200, 200, 200);
   position: fixed;
-  top: calc(50% - 1px);
-  left: calc(50% - 10px);
+  top: 50%;
+  left: calc(50% - 6.5px);
   z-index: 1000;
 }
 

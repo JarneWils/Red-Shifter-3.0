@@ -56,6 +56,10 @@ io.on('connection', socket => {
     }
   });
 
+  socket.on('shootBullet', data => {
+    socket.broadcast.emit('bulletFired', data);
+  });
+
   // Verwijder speler bij disconnect
   socket.on('disconnect', () => {
     console.log(`❌ Speler weg: ${socket.id}`);

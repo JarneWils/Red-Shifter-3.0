@@ -4,7 +4,16 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export class Player {
-  constructor(camera, renderer, worldSize = 100, scene, world, playerId = null, socket) {
+  constructor(
+    camera,
+    renderer,
+    worldSize = 100,
+    scene,
+    world,
+    playerId = null,
+    socket,
+    spawnPosition
+  ) {
     this.camera = camera;
     this.controls = new PointerLockControls(camera, renderer.domElement);
     this.socket = socket;
@@ -19,6 +28,7 @@ export class Player {
     this.playerId = playerId;
     this.playerHeight = 1.5;
     this.playerWidth = 0.5;
+    this.controls.object.position.copy(spawnPosition);
     this.jumpSpeed = 12;
     this.canJump = false;
     this.gravity = 40;

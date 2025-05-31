@@ -91,3 +91,28 @@ body {
   margin-left: 8px;
   opacity: 0.8;
 }
+
+.gun-holder {
+  display: none;
+  position: fixed;
+  right: 370px;
+  bottom: 0px;
+  width: 370px;
+  animation: hold 1s infinite ease-in-out;
+  filter: brightness(0.8) contrast(0.8);
+}
+.gun-holder img {
+  width: 370px;
+}
+
+@keyframes hold {
+  0% {
+    bottom: -5px;
+  }
+  50% {
+    bottom: -10px;
+  }
+  100% {
+    bottom: -5px;
+  }
+}

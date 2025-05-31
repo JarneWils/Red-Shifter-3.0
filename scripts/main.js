@@ -8,6 +8,8 @@ import { io } from 'socket.io-client';
 import { ControlPanel } from './controlPanel';
 import { GunManager } from './gunManager.js';
 
+const gunHand = document.querySelector('.gun-holder');
+
 const controlPanel = new ControlPanel();
 controlPanel.startListening();
 
@@ -33,6 +35,10 @@ socket.on('connect', () => {
   });
 
   localPlayerId = socket.id;
+  const x = Math.floor(Math.random() * 60) + 1;
+  const y = Math.floor(Math.random() * 60) + 1;
+  const spawnPosition = new THREE.Vector3(x, 42, y);
+
   player = new Player(
     playerCamera,
     renderer,
@@ -40,7 +46,8 @@ socket.on('connect', () => {
     scene,
     world,
     localPlayerId,
-    socket
+    socket,
+    spawnPosition // voeg deze toe
   );
 
   scene.add(player.controls.object);
@@ -142,11 +149,11 @@ document.addEventListener('keydown', e => {
 
     if (usingFirstPerson) {
       player.enable();
-      controls.enabled = false;
+      controls.enabled = true;
       currentCamera = playerCamera;
     } else {
       player.disable();
-      controls.enabled = true;
+      controls.enabled = false;
       currentCamera = orbitCamera;
     }
   }
@@ -217,7 +224,10 @@ function animate() {
   }
 
   // 🚀 Altijd gunManager updaten
-  if (gunManager) gunManager.update(delta);
+  if (gunManager) {
+    gunManager.update(delta);
+    gunHand.style.display = controlPanel.gun ? 'block' : 'none';
+  }
 
   updateUI();
   cameraHelper.update();

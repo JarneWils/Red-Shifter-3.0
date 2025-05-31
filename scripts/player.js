@@ -24,15 +24,17 @@ export class Player {
     this.gravity = 40;
     this.speed = 8;
     this.wireframe = false;
-    this.yaw = 0;
+
+    this.yaw = 0; // Zelf bijhouden voor speler mesh rotatie
+
     renderer.domElement.addEventListener('mousemove', event => {
       if (!this.enabled) return;
       const movementX = event.movementX || 0;
-      // beweging in pixels omzetten naar radians, bv.
       const sensitivity = 0.002;
-      this.yaw -= movementX * sensitivity; // verminder bij rechts, vergroot bij links
+      this.yaw -= movementX * sensitivity;
       this.yaw = this.normalizeAngle(this.yaw);
-      this.updateRotation();
+
+      this.updateRotation(); // Draai enkel de player mesh
     });
 
     this.controlsPanel = new ControlPanel();
@@ -65,29 +67,22 @@ export class Player {
     if (!this.socket || !this.enabled) return;
 
     const position = this.controls.object.position;
-    const rotation = this.controls.object.rotation;
 
     this.socket.emit('playerMovement', {
       id: this.playerId,
       position: { x: position.x, y: position.y, z: position.z },
-      rotation: { x: 0, y: this.yaw, z: 0 }, // stuur jouw continue yaw
+      rotation: { x: 0, y: this.yaw, z: 0 },
     });
   }
 
   updateRotation() {
-    // pitch kan je laten zoals PointerLockControls doet (of bijv. controls.getPitch())
-    // maar voor yaw gebruik je eigen this.yaw
-
-    const pitch = this.controls.getPitchObject().rotation.x; // standaard pitch uit controls
-
-    const quaternion = new THREE.Quaternion();
-    quaternion.setFromEuler(new THREE.Euler(pitch, this.yaw, 0, 'YXZ'));
-    this.controls.object.quaternion.copy(quaternion);
+    // We passen alleen de speler mesh aan, niet de camera controls!
+    if (this.playerMesh) {
+      this.playerMesh.rotation.set(0, this.yaw, 0);
+    }
   }
 
   normalizeAngle(angle) {
-    // Houdt angle binnen [-Infinity, +Infinity], maar optioneel kan je normaliseren naar [0, 2π]
-    // Hier gewoon een versie die angle wrapt tussen -π en π als je dat wilt
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
     return angle;
@@ -187,9 +182,8 @@ export class Player {
         position.z
       );
 
-      const euler = new THREE.Euler(0, 0, 0, 'YXZ');
-      euler.setFromQuaternion(this.controls.object.quaternion);
-      this.playerMesh.rotation.set(0, euler.y, 0);
+      // Hier gebruik je alleen yaw (links/rechts) voor de mesh rotatie
+      this.playerMesh.rotation.set(0, this.yaw, 0);
     }
 
     this.sendPlayerData();
@@ -199,7 +193,7 @@ export class Player {
     return this.controls;
   }
 
-  static remotePlayers = {}; // static zodat we dit globaal kunnen beheren
+  static remotePlayers = {};
 
   static addRemotePlayer(id, scene) {
     if (Player.remotePlayers[id]) return;
@@ -207,23 +201,16 @@ export class Player {
     const loader = new GLTFLoader();
 
     loader.load(
-      'models/choomah.glb', // vervang dit met het pad naar je GLB-bestand
+      'models/choomah.glb',
       gltf => {
         const model = gltf.scene;
-        // gltf.scene.traverse(child => {
-        //   if (child.isMesh) {
-        //     child.castShadow = true;
-        //     child.receiveShadow = true;
-        //   }
-        // });
-        model.scale.set(0.5, 0.5, 0.5); // schaal het model indien nodig
+        model.scale.set(0.5, 0.5, 0.5);
         scene.add(model);
         Player.remotePlayers[id] = { mesh: model };
       },
       undefined,
       error => {
         console.error('Error loading GLB model:', error);
-        // fallback: maak toch een box mesh aan
         const geometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
         const material = new THREE.MeshStandardMaterial({ color: 0xffffff });
         const mesh = new THREE.Mesh(geometry, material);
@@ -248,7 +235,7 @@ export class Player {
     remote.mesh.position.set(data.position.x, data.position.y - 0.5, data.position.z);
 
     const quaternion = new THREE.Quaternion();
-    quaternion.setFromEuler(new THREE.Euler(0, data.rotation.y, 0, 'YXZ')); // 'YXZ' belangrijk om consistent te blijven
+    quaternion.setFromEuler(new THREE.Euler(0, data.rotation.y, 0, 'YXZ'));
     remote.mesh.quaternion.copy(quaternion);
   }
 }

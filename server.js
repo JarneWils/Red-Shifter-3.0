@@ -60,6 +60,12 @@ io.on('connection', socket => {
     socket.broadcast.emit('bulletFired', data);
   });
 
+  socket.on('playerHit', ({ hitPlayerId, shooterId }) => {
+    console.log(`Player ${hitPlayerId} werd geraakt door ${shooterId}`);
+    io.to(hitPlayerId).emit('playerDead');
+    socket.broadcast.emit('playerHit', { hitPlayerId, shooterId });
+  });
+
   // Verwijder speler bij disconnect
   socket.on('disconnect', () => {
     console.log(`❌ Speler weg: ${socket.id}`);

@@ -44,10 +44,17 @@ socket.on('connect', () => {
   );
 
   scene.add(player.controls.object);
-  gunManager = new GunManager(playerCamera, scene, controlPanel, socket, localPlayerId, world);
+  gunManager = new GunManager(
+    playerCamera,
+    scene,
+    controlPanel,
+    socket,
+    localPlayerId,
+    world,
+    Player
+  );
 
   socket.on('bulletFired', data => {
-    console.log('⛳ bulletFired binnen:', data, 'local:', localPlayerId);
     if (!gunManager || data.id === localPlayerId) return;
 
     gunManager.spawnBullet(
@@ -70,6 +77,12 @@ socket.on('playerMoved', data => {
 
 socket.on('playerDisconnected', id => {
   Player.removeRemotePlayer(id, scene);
+});
+
+socket.on('playerDead', () => {
+  console.log('je bent dood');
+  alert('Je bent dood!'); // of andere logica
+  // evt. respawn
 });
 
 //-------------------------------------------------------------------------------------------------

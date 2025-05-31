@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class GunManager {
-  constructor(camera, scene, controlPanel, socket, playerId, world, players) {
+  constructor(camera, scene, controlPanel, socket, playerId, world, Player) {
     this.controlPanel = controlPanel;
     this.camera = camera;
     this.scene = scene;
@@ -11,7 +11,7 @@ export class GunManager {
     this.active = false;
 
     this.world = world;
-    this.players = players;
+    this.players = Player.remotePlayers;
 
     this.socket = socket;
     this.playerId = playerId;
@@ -40,12 +40,12 @@ export class GunManager {
   }
 
   spawnBullet(origin, direction, isRemote = false) {
-    const geometry = new THREE.SphereGeometry(0.03, 8, 8);
-    const material = new THREE.MeshBasicMaterial({ color: isRemote ? 0xff0000 : 0xffffff });
+    const geometry = new THREE.SphereGeometry(0.04, 8, 8);
+    const material = new THREE.MeshBasicMaterial({ color: isRemote ? 0xffffff : 0xffffff });
     const bullet = new THREE.Mesh(geometry, material);
 
     bullet.position.copy(origin);
-    bullet.userData.velocity = direction.clone().multiplyScalar(40);
+    bullet.userData.velocity = direction.clone().multiplyScalar(60);
 
     this.scene.add(bullet);
 
@@ -74,7 +74,7 @@ export class GunManager {
     this.spawnBullet(origin, direction);
   }
 
-  checkCollision(bullet) {
+  checkBlockCollision(bullet) {
     const pos = bullet.position.clone();
     const x = Math.floor(pos.x);
     const y = Math.floor(pos.y);
@@ -88,21 +88,29 @@ export class GunManager {
   }
 
   checkPlayerCollision(bullet) {
-    for (let player of this.players) {
-      if (player.id === this.playerId) continue; // sla jezelf over
+    const pos = bullet.position;
+    for (const id in this.players) {
+      if (id === this.playerId) continue;
+      const player = this.players[id];
 
-      const playerPos = player.mesh.position;
-      const distance = bullet.position.distanceTo(playerPos);
+      if (!player) {
+        continue;
+      }
+      // Pas hier: check of player.mesh bestaat en gebruik player.mesh.position
+      if (!player.mesh || !player.mesh.position) {
+        continue;
+      }
 
-      if (distance < 1) {
-        this.scene.remove(bullet);
-        console.log('bullet removed');
-        console.log('damage -1');
-        return true;
+      const playerPos = player.mesh.position; // direct gebruiken, want Vector3
+
+      const dist = pos.distanceTo(playerPos);
+      // console.log('Bullet pos:', pos.toArray(), 'Player pos:', playerPos.toArray(), 'Distance:', dist);
+
+      if (dist < 0.5) {
+        return id;
       }
     }
-
-    return false;
+    return null;
   }
 
   updateBulletList(list, delta) {
@@ -110,10 +118,23 @@ export class GunManager {
       const bullet = list[i];
       bullet.position.add(bullet.userData.velocity.clone().multiplyScalar(delta));
 
-      if (bullet.position.length() > 100 || this.checkCollision(bullet)) {
+      // Check botsing met block
+      if (bullet.position.length() > 100 || this.checkBlockCollision(bullet)) {
         this.scene.remove(bullet);
-        console.log('bullet removed');
         list.splice(i, 1);
+        continue;
+      }
+
+      // Check botsing met speler
+      const hitPlayerId = this.checkPlayerCollision(bullet);
+      if (hitPlayerId) {
+        this.scene.remove(bullet);
+        list.splice(i, 1);
+
+        // Stuur event via socket om speler te laten weten dat hij geraakt is
+        this.socket.emit('playerHit', { hitPlayerId, shooterId: this.playerId });
+
+        console.log(`Player ${hitPlayerId} is geraakt door ${this.playerId}`);
       }
     }
   }

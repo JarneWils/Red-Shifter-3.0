@@ -11,6 +11,7 @@ export class GunManager {
     this.active = false;
 
     this.world = world;
+    this.Player = Player;
     this.players = Player.remotePlayers;
 
     this.socket = socket;
@@ -24,7 +25,7 @@ export class GunManager {
       const origin = new THREE.Vector3(data.origin.x, data.origin.y, data.origin.z);
       const direction = new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z);
 
-      this.spawnBullet(origin, direction, true);
+      this.spawnBullet(origin, direction, true, data.id);
     });
   }
 
@@ -39,13 +40,14 @@ export class GunManager {
     }
   }
 
-  spawnBullet(origin, direction, isRemote = false) {
+  spawnBullet(origin, direction, isRemote = false, shooterId = this.playerId) {
     const geometry = new THREE.SphereGeometry(0.04, 8, 8);
     const material = new THREE.MeshBasicMaterial({ color: isRemote ? 0xffffff : 0xffffff });
     const bullet = new THREE.Mesh(geometry, material);
 
     bullet.position.copy(origin);
     bullet.userData.velocity = direction.clone().multiplyScalar(60);
+    bullet.userData.shooterId = shooterId; // <-- belangrijk
 
     this.scene.add(bullet);
 
@@ -70,8 +72,7 @@ export class GunManager {
       origin: origin,
       direction: direction,
     });
-
-    this.spawnBullet(origin, direction);
+    this.spawnBullet(origin, direction, false, this.playerId);
   }
 
   checkBlockCollision(bullet) {
@@ -89,27 +90,32 @@ export class GunManager {
 
   checkPlayerCollision(bullet) {
     const pos = bullet.position;
-    for (const id in this.players) {
-      if (id === this.playerId) continue;
-      const player = this.players[id];
 
-      if (!player) {
+    const allPlayers = {
+      ...this.players,
+      [this.playerId]: this.Player.localPlayer, // <-- fix hier
+    };
+
+    for (const id in allPlayers) {
+      const player = allPlayers[id];
+
+      if (!player || !player.mesh || !player.mesh.position) {
         continue;
       }
-      // Pas hier: check of player.mesh bestaat en gebruik player.mesh.position
-      if (!player.mesh || !player.mesh.position) {
-        continue;
-      }
 
-      const playerPos = player.mesh.position; // direct gebruiken, want Vector3
+      if (id === bullet.userData.shooterId) continue;
 
+      const playerPos = player.mesh.position;
       const dist = pos.distanceTo(playerPos);
-      // console.log('Bullet pos:', pos.toArray(), 'Player pos:', playerPos.toArray(), 'Distance:', dist);
 
       if (dist < 0.5) {
+        console.log(
+          `[COLLISION DETECTED] bullet at ${pos.toArray()} hit player ${id} at ${playerPos.toArray()}`
+        );
         return id;
       }
     }
+
     return null;
   }
 
@@ -132,9 +138,10 @@ export class GunManager {
         list.splice(i, 1);
 
         // Stuur event via socket om speler te laten weten dat hij geraakt is
-        this.socket.emit('playerHit', { hitPlayerId, shooterId: this.playerId });
-
-        console.log(`Player ${hitPlayerId} is geraakt door ${this.playerId}`);
+        if (hitPlayerId !== bullet.userData.shooterId) {
+          this.socket.emit('playerHit', { hitPlayerId, shooterId: bullet.userData.shooterId });
+          console.log(`Player ${hitPlayerId} is geraakt door ${bullet.userData.shooterId}`);
+        }
       }
     }
   }

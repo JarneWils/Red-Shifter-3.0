@@ -17,6 +17,31 @@ body {
   margin: 8px;
 }
 
+.start-container {
+  display: none;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  top: 0px;
+  left: 0px;
+}
+.start-button {
+  background-color: white;
+  border: none;
+  position: fixed;
+  top: 50vh;
+  left: 50vw;
+  transform: translateX(-50%);
+  padding: 10px 25px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.start-button:hover {
+  background-color: rgb(237, 198, 26);
+}
+
 .aimPoint {
   width: 1px;
   height: 15px;
@@ -95,14 +120,14 @@ body {
 .gun-holder {
   display: none;
   position: fixed;
-  right: 370px;
+  left: 52vw;
   bottom: 0px;
   width: 370px;
   animation: hold 1s infinite ease-in-out;
   filter: brightness(0.8) contrast(0.8);
 }
 .gun-holder img {
-  width: 370px;
+  height: 50vh;
 }
 
 @keyframes hold {

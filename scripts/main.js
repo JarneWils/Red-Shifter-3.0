@@ -9,6 +9,16 @@ import { ControlPanel } from './controlPanel';
 import { GunManager } from './gunManager.js';
 
 const gunHand = document.querySelector('.gun-holder');
+const startScreen = document.querySelector('.start-container');
+const startButton = document.querySelector('.start-button');
+
+let isStart = true;
+
+if (isStart) {
+  startScreen.style.display = 'block';
+} else if (!isStart) {
+  startScreen.style.display = 'none';
+}
 
 const controlPanel = new ControlPanel();
 controlPanel.startListening();
@@ -67,7 +77,8 @@ socket.on('connect', () => {
     gunManager.spawnBullet(
       new THREE.Vector3(data.origin.x, data.origin.y, data.origin.z),
       new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z),
-      true
+      true,
+      data.id
     );
   });
 
@@ -75,7 +86,9 @@ socket.on('connect', () => {
 });
 
 socket.on('newPlayer', playerData => {
-  Player.addRemotePlayer(playerData.id, scene);
+  if (playerData.id !== localPlayerId) {
+    Player.addRemotePlayer(playerData.id, scene);
+  }
 });
 
 socket.on('playerMoved', data => {
@@ -84,6 +97,13 @@ socket.on('playerMoved', data => {
 
 socket.on('playerDisconnected', id => {
   Player.removeRemotePlayer(id, scene);
+});
+
+socket.on('playerHit', ({ hitPlayerId, shooterId }) => {
+  if (hitPlayerId === localPlayerId && shooterId !== localPlayerId) {
+    console.log(`Je bent geraakt door speler ${shooterId}`);
+    alert(`Je bent geraakt door speler ${shooterId}`);
+  }
 });
 
 socket.on('playerDead', shooterId => {
@@ -143,20 +163,18 @@ controls.update();
 
 let usingFirstPerson = false;
 
-document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') {
-    usingFirstPerson = !usingFirstPerson;
+startButton.addEventListener('click', () => {
+  isStart = false;
+  startScreen.style.display = 'none';
 
-    if (usingFirstPerson) {
-      player.enable();
-      controls.enabled = true;
-      currentCamera = playerCamera;
-    } else {
-      player.disable();
-      controls.enabled = false;
-      currentCamera = orbitCamera;
-    }
+  usingFirstPerson = true;
+  controls.enabled = false; // orbit controls uit
+
+  if (player) {
+    player.enable(); // activeer movement
   }
+
+  currentCamera = playerCamera;
 });
 
 // lights

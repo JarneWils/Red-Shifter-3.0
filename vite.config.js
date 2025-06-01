@@ -1,8 +1,9 @@
-/**
- * @type {import { 'vite' }.UserConfig}
- */
-export default {
-    build: {
-        sourcemap: true,
-    },
-}
+import { defineConfig } from 'vite';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+});

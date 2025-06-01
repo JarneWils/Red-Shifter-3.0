@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+const gunAudio = document.querySelector('#gun-audio');
+
 export class GunManager {
   constructor(camera, scene, controlPanel, socket, playerId, world, Player) {
     this.controlPanel = controlPanel;
@@ -60,6 +62,9 @@ export class GunManager {
 
   shoot() {
     if (!this.active || !this.controlPanel?.gun) return;
+
+    const audioClone = gunAudio.cloneNode();
+    audioClone.play();
 
     const center = new THREE.Vector2(0, 0);
     this.raycaster.setFromCamera(center, this.camera);

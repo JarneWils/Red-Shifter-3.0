@@ -141,3 +141,37 @@ body {
     bottom: -5px;
   }
 }
+
+.hit {
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 0, 0);
+  opacity: 0.15;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  display: none;
+}
+.die {
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 0, 0);
+  opacity: 0.9;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  display: none;
+}
+
+.hp-container {
+  width: 280px;
+  position: fixed;
+  top: 5vh;
+  left: 50vw;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+}
+.hartje img {
+  width: 40px;
+}

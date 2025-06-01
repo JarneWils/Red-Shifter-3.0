@@ -11,6 +11,20 @@ import { GunManager } from './gunManager.js';
 const gunHand = document.querySelector('.gun-holder');
 const startScreen = document.querySelector('.start-container');
 const startButton = document.querySelector('.start-button');
+const hitScreen = document.querySelector('.hit');
+const dieScreen = document.querySelector('.die');
+const hpContainer = document.querySelector('.hp-container');
+
+const backgroundAudio = document.querySelector('#background-audio');
+const hitAudios = [
+  document.querySelector('#hit1-audio'),
+  document.querySelector('#hit2-audio'),
+  document.querySelector('#hit3-audio'),
+  document.querySelector('#hit4-audio'),
+];
+const dieAudio = document.querySelector('#die-audio');
+
+let lives = 5;
 
 let isStart = true;
 
@@ -102,17 +116,36 @@ socket.on('playerDisconnected', id => {
 socket.on('playerHit', ({ hitPlayerId, shooterId }) => {
   if (hitPlayerId === localPlayerId && shooterId !== localPlayerId) {
     console.log(`Je bent geraakt door speler ${shooterId}`);
-    alert(`Je bent geraakt door speler ${shooterId}`);
-  }
-});
 
-socket.on('playerDead', shooterId => {
-  if (shooterId) {
-    console.log(`Je bent geraakt door speler ${shooterId}`);
-    alert(`Je bent geraakt door speler ${shooterId}`);
-  } else {
-    console.log('Je bent dood!');
-    alert('Je bent dood!');
+    // Verwijder 1 hartje (als er nog hartjes zijn)
+    if (lives > 0) {
+      lives--;
+
+      const randomIndex = Math.floor(Math.random() * hitAudios.length);
+      const audioClone = hitAudios[randomIndex].cloneNode();
+      audioClone.play();
+
+      const hartjes = hpContainer.querySelectorAll('.hartje');
+      if (hartjes.length > 0) {
+        const lastHartje = hartjes[hartjes.length - 1];
+        hpContainer.removeChild(lastHartje);
+      }
+    }
+
+    hitScreen.style.display = 'block';
+    setTimeout(() => {
+      hitScreen.style.display = 'none';
+    }, 500);
+
+    // wat moet gebeuren als de player sterft
+    if (lives <= 0) {
+      dieAudio.play();
+      backgroundAudio.pause();
+      dieScreen.style.display = 'block';
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 1500);
+    }
   }
 });
 
@@ -166,6 +199,7 @@ let usingFirstPerson = false;
 startButton.addEventListener('click', () => {
   isStart = false;
   startScreen.style.display = 'none';
+  backgroundAudio.play();
 
   usingFirstPerson = true;
   controls.enabled = false; // orbit controls uit
@@ -210,6 +244,16 @@ function updateUI() {
       item.classList.add('active');
     }
   });
+}
+
+// Health
+for (let i = 0; i < 5; i++) {
+  const div = document.createElement('div');
+  div.classList.add('hartje'); // class toevoegen
+  const img = document.createElement('img');
+  img.src = 'public/images/hartje.png'; // pad naar de afbeelding
+  div.appendChild(img);
+  hpContainer.appendChild(div);
 }
 
 //Loop
